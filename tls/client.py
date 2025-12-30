@@ -5,13 +5,8 @@ ClientHello = namedtuple("ClientHello", ["random", "session_id", "public_key"])
 
 
 def parse_client_message(client_message: bytes):
-    # TODO: clean up the logic here
-    client_random = None
-    client_key = None
-    session_id = None
-
     client_message = client_message.hex()
-    end_of_msg = 34 * 2
+    end_of_msg = 68
 
     index_client_version = client_message.find("0303")
     client_random = client_message[index_client_version + 4: index_client_version + end_of_msg]

@@ -1,5 +1,7 @@
 import logging
 import socket
+
+from constants import APPLICATION_DATA_RECORD_TYPE, TLS_VERSION
 from . import client, server, utils
 
 logger = logging.getLogger("tls_server")
@@ -16,8 +18,8 @@ class TlsSession:
 
 
     def wrap_handshake_msg(self, data: bytes):
-        record_type = bytes([0x17])
-        protocol_version = bytes([0x03, 0x03])
+        record_type = bytes([APPLICATION_DATA_RECORD_TYPE])
+        protocol_version = bytes(TLS_VERSION)
         len_data_in_bytes = (len(data) + 17).to_bytes(2, "big")
         final_byte = bytes([0x16])
 
@@ -31,15 +33,15 @@ class TlsSession:
    
 
     def wrap_app_msg(self, data: bytes):
-        record_type = bytes([0x17])
-        protocol_version = bytes([0x03, 0x03])
+        record_type = bytes([APPLICATION_DATA_RECORD_TYPE])
+        protocol_version = bytes(TLS_VERSION)
 
         try:
             len_data_in_bytes = (len(data) + 17).to_bytes(2, "big")
         except OverflowError as e:
             logger.exception(f"Too much data to send over HTTPS...\n{e}")
 
-        final_byte = bytes([0x17])
+        final_byte = bytes([APPLICATION_DATA_RECORD_TYPE])
         additional = record_type + protocol_version + len_data_in_bytes
         encrypted_data = utils.encrypt(self.app_keys.server_app_key, utils.xor_iv(self.app_keys.server_app_iv, self.app_record_count), data + final_byte, additional)
         
@@ -74,7 +76,10 @@ class TlsSession:
 
         self.handshake_keys = utils.make_handshake_keys(client_hello.public_key, server_hello.private_key, request[5:], server_hello_msg[5:])
 
-        change_cipher_spec = bytes([0x14, 0x03, 0x03, 0x00, 0x01, 0x01]) 
+        change_cipher_spec = [0x14]
+        change_cipher_spec.extend(TLS_VERSION)
+        change_cipher_spec.extend([0x00, 0x01, 0x01])
+        change_cipher_spec = bytes(change_cipher_spec)
         
         s_extensions = bytes([0x08, 0x00, 0x00, 0x02, 0x00, 0x00])
         s_encrypted_extensions = self.wrap_handshake_msg(s_extensions)
