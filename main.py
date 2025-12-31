@@ -1,6 +1,7 @@
 import logging
 import socket
 import threading
+from constants import TLS_RECORD
 import tls.main
 from routing import handle_path
 from http_message import Request
@@ -16,7 +17,7 @@ def handle_request(client_sock: socket.socket, request_id: int):
     try:
         batch_size = 2048
         data = client_sock.recv(batch_size)
-        is_https = data.hex(sep=" ").startswith("16 03 01")
+        is_https = data.hex(sep=" ").startswith(TLS_RECORD)
 
         if is_https:
             logger.info("https request being handled...")
